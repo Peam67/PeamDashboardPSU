@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ผ่อนผันทหาร | PSU Data Analytic</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Kanit','Segoe UI',sans-serif;background:#eef2f7;display:flex;min-height:100vh;color:#1e293b;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;min-height:100vh;background:linear-gradient(180deg,#1e3a5f 0%,#1a3352 100%);display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sb-logo{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,0.1);}
+.sb-logo .brand{font-size:16px;font-weight:700;color:#fff;letter-spacing:0.5px;}
+.sb-logo .sub{font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;}
+.sb-nav{padding:12px 0;flex:1;}
+.nav-section{padding:8px 18px 4px;font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;color:rgba(255,255,255,0.65);font-size:12.5px;cursor:pointer;transition:all 0.2s;text-decoration:none;border-left:3px solid transparent;}
+.nav-item:hover{background:rgba(255,255,255,0.08);color:#fff;}
+.nav-item.active{background:rgba(255,255,255,0.12);color:#fff;border-left-color:#38bdf8;}
+.nav-icon{font-size:15px;width:20px;text-align:center;}
+
+/* ── MAIN ── */
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;}
+.topbar{background:#fff;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:15px;font-weight:600;color:#1e3a5f;}
+.topbar-sub{font-size:11px;color:#94a3b8;margin-top:1px;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.era-toggle{display:flex;background:#f1f5f9;border-radius:50px;padding:3px;gap:2px;}
+.era-btn{padding:4px 14px;border-radius:50px;border:none;background:transparent;font-size:11px;font-family:'Kanit',sans-serif;font-weight:600;color:#64748b;cursor:pointer;transition:all 0.2s;}
+.era-btn.active{background:#1e3a5f;color:#fff;}
+
+.content{padding:24px 28px;flex:1;}
+
+/* ── YEAR BAR ── */
+.year-bar{background:#fff;border-radius:12px;padding:12px 18px;margin-bottom:20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+.yb-label{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+.ybtn{padding:5px 14px;border-radius:50px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#475569;font-size:11.5px;font-family:'Kanit',sans-serif;font-weight:500;cursor:pointer;transition:all 0.18s;}
+.ybtn:hover{border-color:#38bdf8;color:#0ea5e9;background:#f0f9ff;}
+.ybtn.active{background:#1e3a5f;border-color:#1e3a5f;color:#fff;box-shadow:0 2px 8px rgba(30,58,95,0.3);}
+.ybtn.all-btn.active{background:linear-gradient(135deg,#0ea5e9,#6366f1);border-color:#0ea5e9;}
+
+/* ── KPI CARDS ── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+.kpi-card{border-radius:14px;padding:18px 20px;color:#fff;position:relative;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.12);}
+.kpi-card::after{content:'';position:absolute;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.1);right:-20px;top:-20px;}
+.kpi-card.c1{background:linear-gradient(135deg,#0ea5e9,#38bdf8);}
+.kpi-card.c2{background:linear-gradient(135deg,#6366f1,#818cf8);}
+.kpi-card.c3{background:linear-gradient(135deg,#10b981,#34d399);}
+.kpi-card.c4{background:linear-gradient(135deg,#f59e0b,#fbbf24);}
+.kpi-icon{font-size:24px;margin-bottom:8px;}
+.kpi-num{font-size:36px;font-weight:700;line-height:1;}
+.kpi-lbl{font-size:11px;opacity:0.85;margin-top:4px;}
+.kpi-sub{font-size:9px;opacity:0.7;margin-top:2px;}
+
+/* ── CHART CARDS ── */
+.chart-row{display:grid;gap:16px;margin-bottom:20px;}
+.chart-row.two{grid-template-columns:1.5fr 1fr;}
+.chart-row.three{grid-template-columns:repeat(3,1fr);}
+.chart-row.one{grid-template-columns:1fr;}
+.card{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 1px 6px rgba(0,0,0,0.07);}
+.card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.card-title{font-size:13px;font-weight:600;color:#1e293b;}
+.card-sub{font-size:10px;color:#94a3b8;margin-top:2px;}
+.chart-wrap{position:relative;}
+
+/* ── FAC FILTER ── */
+.fac-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+.fbtn{padding:5px 14px;border-radius:50px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#475569;font-size:11px;font-family:'Kanit',sans-serif;cursor:pointer;transition:all 0.18s;}
+.fbtn:hover{border-color:#6366f1;color:#6366f1;}
+.fbtn.active{background:#6366f1;border-color:#6366f1;color:#fff;}
+
+/* ── STAT ROW ── */
+.stat-row{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:20px;}
+.stat-card{background:#fff;border-radius:12px;padding:14px 12px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;flex-direction:column;align-items:center;text-align:center;border-top:3px solid #e2e8f0;}
+.stat-card.s0{border-top-color:#10b981;} .stat-card.s1{border-top-color:#6366f1;} .stat-card.s2{border-top-color:#94a3b8;}
+.stat-card.s3{border-top-color:#3b82f6;} .stat-card.s4{border-top-color:#ef4444;} .stat-card.s5{border-top-color:#f97316;} .stat-card.s6{border-top-color:#f59e0b;}
+.stat-icon{font-size:18px;margin-bottom:6px;}
+.stat-num{font-size:22px;font-weight:700;color:#1e293b;}
+.stat-lbl{font-size:9px;color:#64748b;margin-top:3px;line-height:1.3;}
+
+/* ── NO DATA ── */
+.no-data-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#94a3b8;font-size:12px;pointer-events:none;}
+.footer{text-align:center;font-size:10px;color:#94a3b8;padding:16px 28px 24px;}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-logo">
+    <div class="brand">PSU PHUKET</div>
+    <div class="sub">Prince of Songkla University</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-section">Main</div>
+    <a class="nav-item" href="#"><span class="nav-icon">📊</span>Dashboard</a>
+    <a class="nav-item" href="#"><span class="nav-icon">💰</span>Finance</a>
+    <a class="nav-item" href="#"><span class="nav-icon">🏟</span>Sport Complex</a>
+    <a class="nav-item" href="#"><span class="nav-icon">👨‍🎓</span>Student</a>
+    <div class="nav-section">Analytics</div>
+    <a class="nav-item active" href="#"><span class="nav-icon">🪖</span>ผ่อนผันทหาร</a>
+    <a class="nav-item" href="#"><span class="nav-icon">📈</span>Compare 5 Years</a>
+    <a class="nav-item" href="#"><span class="nav-icon">🛠</span>Chart Tool</a>
+    <div class="nav-section">Other</div>
+    <a class="nav-item" href="#"><span class="nav-icon">🏢</span>Building</a>
+    <a class="nav-item" href="#"><span class="nav-icon">🎓</span>EdPex</a>
+    <a class="nav-item" href="#"><span class="nav-icon">🌐</span>AUN</a>
+  </nav>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">🪖 นักศึกษาผ่อนผันทหาร</div>
+      <div class="topbar-sub">PSU Data Analytic &nbsp;|&nbsp; ข้อมูลจริงครบ 9 ปี (2561–2569) &nbsp;|&nbsp; รวม <strong>489 คน</strong> &nbsp;|&nbsp; กำลังดู: <span id="ydisplay" style="color:#0ea5e9;font-weight:600;">ทั้งหมด</span></div>
+    </div>
+    <div class="topbar-right">
+      <div class="era-toggle">
+        <button class="era-btn active" id="era-be" onclick="switchEra('BE')">พ.ศ.</button>
+        <button class="era-btn" id="era-ce" onclick="switchEra('CE')">ค.ศ.</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- YEAR BAR -->
+    <div class="year-bar">
+      <span class="yb-label">📅 ปีที่ผ่อนผัน</span>
+      <button class="ybtn all-btn active" onclick="filterYear('all','all',this)">✦ ทั้งหมด</button>
+      <button class="ybtn" onclick="filterYear('2561','2018',this)">2561</button>
+      <button class="ybtn" onclick="filterYear('2562','2019',this)">2562</button>
+      <button class="ybtn" onclick="filterYear('2563','2020',this)">2563</button>
+      <button class="ybtn" onclick="filterYear('2564','2021',this)">2564</button>
+      <button class="ybtn" onclick="filterYear('2565','2022',this)">2565</button>
+      <button class="ybtn" onclick="filterYear('2566','2023',this)">2566</button>
+      <button class="ybtn" onclick="filterYear('2567','2024',this)">2567</button>
+      <button class="ybtn" onclick="filterYear('2568','2025',this)">2568</button>
+      <button class="ybtn" onclick="filterYear('2569','2026',this)">2569</button>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-row">
+      <div class="kpi-card c1">
+        <div class="kpi-icon">🪖</div>
+        <div class="kpi-num" id="kpi-total">489</div>
+        <div class="kpi-lbl">นักศึกษาผ่อนผันทหาร</div>
+        <div class="kpi-sub" id="kpi-year-lbl">รวมทั้งหมด 9 ปี</div>
+      </div>
+      <div class="kpi-card c2">
+        <div class="kpi-icon">🎓</div>
+        <div class="kpi-num" id="kpi-grad">176</div>
+        <div class="kpi-lbl">สำเร็จการศึกษา</div>
+        <div class="kpi-sub" id="kpi-grad-pct">36.0%</div>
+      </div>
+      <div class="kpi-card c3">
+        <div class="kpi-icon">📖</div>
+        <div class="kpi-num" id="kpi-study">104</div>
+        <div class="kpi-lbl">กำลังศึกษา</div>
+        <div class="kpi-sub" id="kpi-study-pct">21.3%</div>
+      </div>
+      <div class="kpi-card c4">
+        <div class="kpi-icon">📍</div>
+        <div class="kpi-num" id="kpi-prov">28</div>
+        <div class="kpi-lbl">จังหวัดที่มาจาก</div>
+        <div class="kpi-sub">ทั่วประเทศ</div>
+      </div>
+    </div>
+
+    <!-- FACULTY FILTER -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">กรองตามคณะ</div>
+      <div class="fac-wrap" id="fac-btns">
+        <button class="fbtn active" onclick="filterFac('all',this)">ทั้งหมด</button>
+        <button class="fbtn" onclick="filterFac('CoC',this)">CoC</button>
+        <button class="fbtn" onclick="filterFac('CoE',this)">CoE</button>
+        <button class="fbtn" onclick="filterFac('FHT',this)">FHT</button>
+        <button class="fbtn" onclick="filterFac('FIS',this)">FIS</button>
+        <button class="fbtn" onclick="filterFac('FTE',this)">FTE</button>
+        <button class="fbtn" onclick="filterFac('TE',this)">TE</button>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW 1 -->
+    <div class="chart-row two" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">จำนวนนักศึกษา แยกตามจังหวัด</div><div class="card-sub">Count by จังหวัด</div></div>
+        </div>
+        <div class="chart-wrap" style="height:300px;">
+          <canvas id="barC"></canvas>
+          <div id="bar-nodata" class="no-data-msg" style="display:none;">📭 ไม่มีข้อมูลจังหวัดในปีนี้<br><span style="font-size:10px;">กรุณาเพิ่มข้อมูลในไฟล์ Excel</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">สัดส่วนตามสถานะนักศึกษา</div><div class="card-sub">Count by สถานะ</div></div>
+        </div>
+        <div class="chart-wrap" style="height:300px;">
+          <canvas id="donutC"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW 2 -->
+    <div class="chart-row two" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">จำนวนนักศึกษาผ่อนผันรายปี</div><div class="card-sub">Total students per year</div></div>
+        </div>
+        <div class="chart-wrap" style="height:200px;">
+          <canvas id="yearBarC"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">สัดส่วนนักศึกษาตามคณะ</div><div class="card-sub">Students by Faculty</div></div>
+        </div>
+        <div class="chart-wrap" style="height:200px;">
+          <canvas id="facPieC"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- TREND -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <div><div class="card-title">📈 แนวโน้มนักศึกษาแยกตามสถานะ (2561–2569)</div><div class="card-sub">Trend by status across years</div></div>
+      </div>
+      <div class="chart-wrap" style="height:200px;">
+        <canvas id="trendC"></canvas>
+      </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="stat-row">
+      <div class="stat-card s0"><div class="stat-icon">🎓</div><div class="stat-num" id="st0">176</div><div class="stat-lbl">สำเร็จการศึกษา</div></div>
+      <div class="stat-card s1"><div class="stat-icon">📖</div><div class="stat-num" id="st1">104</div><div class="stat-lbl">กำลังศึกษา</div></div>
+      <div class="stat-card s2"><div class="stat-icon">📋</div><div class="stat-num" id="st2">40</div><div class="stat-lbl">ไม่มีข้อมูลใน sis</div></div>
+      <div class="stat-card s3"><div class="stat-icon">📝</div><div class="stat-num" id="st3">10</div><div class="stat-lbl">ไม่มาลงทะเบียน</div></div>
+      <div class="stat-card s4"><div class="stat-icon">⚠️</div><div class="stat-num" id="st4">13</div><div class="stat-lbl">ตกออก</div></div>
+      <div class="stat-card s5"><div class="stat-icon">🚪</div><div class="stat-num" id="st5">2</div><div class="stat-lbl">ลาออก</div></div>
+      <div class="stat-card s6"><div class="stat-icon">❓</div><div class="stat-num" id="st6">144</div><div class="stat-lbl">ไม่ระบุ</div></div>
+    </div>
+
+  </div>
+  <div class="footer">✓ ข้อมูลจริงจากไฟล์ Excel ครบ 9 ปี &nbsp;|&nbsp; PSU Phuket Campus &nbsp;|&nbsp; นักศึกษาผ่อนผันทหาร 2561–2569</div>
+</div>
+
+<script>
+var YD = {"2561": {"total": 84, "provinces": [["นครศรีธรรมราช", 13], ["ภูเก็ต", 10], ["สงขลา", 10], ["กระบี่", 8], ["ตรัง", 8], ["สุราษฎร์ธานี", 8], ["พังงา", 6], ["พัทลุง", 5], ["สตูล", 4], ["ปัตตานี", 3], ["ยะลา", 2], ["สระบุรี", 2], ["ศรีสะเกษ", 1], ["นราธิวาส", 1], ["นนทบุรี", 1], ["เพชรบูรณ์", 1], ["ระนอง", 1]], "statuses": [16, 0, 4, 1, 0, 0, 63], "faculties": ["CoC", "CoE", "FHT", "FIS", "TE"], "fac_detail": {"FIS": {"provinces": [["สงขลา", 4], ["ตรัง", 3], ["พัทลุง", 2], ["กระบี่", 1], ["นครศรีธรรมราช", 1], ["ศรีสะเกษ", 1], ["พังงา", 1], ["ปัตตานี", 1], ["ภูเก็ต", 1], ["ยะลา", 1], ["สตูล", 1], ["สุราษฎร์ธานี", 1], ["สระบุรี", 1]], "statuses": [0, 0, 0, 0, 0, 0, 19], "total": 19}, "CoE": {"provinces": [["นครศรีธรรมราช", 8], ["กระบี่", 5], ["สงขลา", 3], ["ปัตตานี", 2], ["ภูเก็ต", 2], ["สตูล", 2], ["สุราษฎร์ธานี", 2], ["ตรัง", 1], ["นราธิวาส", 1], ["นนทบุรี", 1], ["พัทลุง", 1], ["ยะลา", 1], ["สระบุรี", 1]], "statuses": [10, 0, 4, 1, 0, 0, 15], "total": 30}, "TE": {"provinces": [["พังงา", 3], ["สุราษฎร์ธานี", 3], ["ตรัง", 2], ["นครศรีธรรมราช", 2], ["กระบี่", 1], ["ระนอง", 1], ["สงขลา", 1]], "statuses": [0, 0, 0, 0, 0, 0, 13], "total": 13}, "FHT": {"provinces": [["ภูเก็ต", 5], ["พังงา", 2], ["ตรัง", 1], ["พัทลุง", 1], ["เพชรบูรณ์", 1], ["สตูล", 1], ["สงขลา", 1]], "statuses": [3, 0, 0, 0, 0, 0, 9], "total": 12}, "CoC": {"provinces": [["นครศรีธรรมราช", 2], ["ภูเก็ต", 2], ["สุราษฎร์ธานี", 2], ["กระบี่", 1], ["ตรัง", 1], ["พัทลุง", 1], ["สงขลา", 1]], "statuses": [3, 0, 0, 0, 0, 0, 7], "total": 10}}}, "2562": {"total": 78, "provinces": [["ภูเก็ต", 16], ["พังงา", 9], ["นครศรีธรรมราช", 9], ["กระบี่", 8], ["สุราษฎร์ธานี", 7], ["นราธิวาส", 5], ["ตรัง", 5], ["พัทลุง", 4], ["สงขลา", 4], ["สตูล", 3], ["ยะลา", 3], ["เชียงราย", 1], ["แพร่", 1], ["หนองคาย", 1], ["นนทบุรี", 1], ["เพชรบูรณ์", 1]], "statuses": [53, 2, 5, 2, 1, 0, 15], "faculties": ["CoC", "CoE", "FHT", "FIS", "FTE"], "fac_detail": {"FIS": {"provinces": [["ภูเก็ต", 6], ["พังงา", 4], ["สุราษฎร์ธานี", 2], ["นราธิวาส", 1], ["สงขลา", 1]], "statuses": [8, 1, 1, 0, 0, 0, 4], "total": 14}, "CoE": {"provinces": [["สุราษฎร์ธานี", 4], ["ภูเก็ต", 4], ["นครศรีธรรมราช", 3], ["กระบี่", 2], ["พังงา", 2], ["สตูล", 2], ["เชียงราย", 1], ["ยะลา", 1], ["นราธิวาส", 1], ["ตรัง", 1]], "statuses": [14, 1, 2, 1, 1, 0, 2], "total": 21}, "FTE": {"provinces": [["นราธิวาส", 1], ["ภูเก็ต", 1]], "statuses": [2, 0, 0, 0, 0, 0, 0], "total": 2}, "FHT": {"provinces": [["นครศรีธรรมราช", 2], ["ภูเก็ต", 2], ["เพชรบูรณ์", 1], ["นราธิวาส", 1], ["พังงา", 1], ["ตรัง", 1], ["กระบี่", 1], ["สงขลา", 1], ["ยะลา", 1]], "statuses": [7, 0, 0, 0, 0, 0, 4], "total": 11}, "CoC": {"provinces": [["กระบี่", 5], ["นครศรีธรรมราช", 4], ["พัทลุง", 4], ["ภูเก็ต", 3], ["ตรัง", 3], ["พังงา", 2], ["สงขลา", 2], ["ยะลา", 1], ["นราธิวาส", 1], ["แพร่", 1], ["หนองคาย", 1], ["นนทบุรี", 1], ["สตูล", 1], ["สุราษฎร์ธานี", 1]], "statuses": [22, 0, 2, 1, 0, 0, 5], "total": 30}}}, "2563": {"total": 67, "provinces": [["ภูเก็ต", 17], ["พังงา", 8], ["สงขลา", 8], ["พััทลุง", 7], ["สุราษฎร์ธานี", 6], ["สตูล", 5], ["ปัตตานี", 4], ["ตรัง", 3], ["นครศรีธรรมราช", 2], ["ระนอง", 2], ["กระบี่", 1], ["มหาสารคาม", 1], ["ประจวบคีรีขันธ์", 1], ["นราธิวาส", 1], ["ชุมพร", 1]], "statuses": [59, 0, 7, 1, 0, 0, 0], "faculties": ["CoC", "CoE", "FHT", "FIS", "TE"], "fac_detail": {"FIS": {"provinces": [["ภูเก็ต", 7], ["สุราษฎร์ธานี", 2], ["นครศรีธรรมราช", 1], ["สงขลา", 1], ["พังงา", 1]], "statuses": [12, 0, 0, 0, 0, 0, 0], "total": 12}, "CoE": {"provinces": [["สุราษฎร์ธานี", 2], ["ปัตตานี", 2], ["พังงา", 1], ["ประจวบคีรีขันธ์", 1], ["พััทลุง", 1], ["สตูล", 1], ["สงขลา", 1]], "statuses": [8, 0, 1, 0, 0, 0, 0], "total": 9}, "TE": {"provinces": [["พััทลุง", 4], ["ภูเก็ต", 1], ["พังงา", 1], ["ระนอง", 1], ["สตูล", 1]], "statuses": [7, 0, 1, 0, 0, 0, 0], "total": 8}, "FHT": {"provinces": [["ภูเก็ต", 4], ["สงขลา", 4], ["ปัตตานี", 2], ["พััทลุง", 1]], "statuses": [10, 0, 1, 0, 0, 0, 0], "total": 11}, "CoC": {"provinces": [["ภูเก็ต", 5], ["พังงา", 5], ["ตรัง", 3], ["สตูล", 3], ["สุราษฎร์ธานี", 2], ["สงขลา", 2], ["กระบี่", 1], ["มหาสารคาม", 1], ["นราธิวาส", 1], ["นครศรีธรรมราช", 1], ["ระนอง", 1], ["ชุมพร", 1], ["พััทลุง", 1]], "statuses": [22, 0, 4, 1, 0, 0, 0], "total": 27}}}, "2564": {"total": 45, "provinces": [["ตรัง", 11], ["ภูเก็ต", 7], ["นครศรีธรรมราช", 5], ["กระบี่", 4], ["ระนอง", 3], ["สงขลา", 3], ["พัทลุง", 2], ["พังงา", 2], ["สุราษฎร์ธานี", 2], ["ปัตตานี", 1], ["ชุมพร", 1], ["สตูล", 1], ["ชัยภูมิ", 1], ["อุดรธานี", 1], ["นราธิวาส", 1]], "statuses": [15, 1, 22, 5, 2, 0, 0], "faculties": ["CoC", "CoE", "FHT", "FIS", "TE"], "fac_detail": {"CoE": {"provinces": [["ชุมพร", 1], ["ตรัง", 1], ["สตูล", 1]], "statuses": [2, 0, 0, 1, 0, 0, 0], "total": 3}, "FIS": {"provinces": [["ตรัง", 2], ["กระบี่", 1], ["ภูเก็ต", 1], ["นครศรีธรรมราช", 1]], "statuses": [3, 0, 2, 0, 0, 0, 0], "total": 5}, "TE": {"provinces": [["นครศรีธรรมราช", 2], ["กระบี่", 2], ["ตรัง", 2], ["พังงา", 1], ["สงขลา", 1], ["ระนอง", 1]], "statuses": [2, 0, 7, 0, 0, 0, 0], "total": 9}, "FHT": {"provinces": [["ภูเก็ต", 4], ["พัทลุง", 1], ["ระนอง", 1], ["สงขลา", 1], ["อุดรธานี", 1], ["สุราษฎร์ธานี", 1], ["กระบี่", 1]], "statuses": [2, 1, 7, 0, 0, 0, 0], "total": 10}, "CoC": {"provinces": [["ตรัง", 6], ["ภูเก็ต", 2], ["นครศรีธรรมราช", 2], ["ระนอง", 1], ["พัทลุง", 1], ["ปัตตานี", 1], ["สงขลา", 1], ["ชัยภูมิ", 1], ["พังงา", 1], ["สุราษฎร์ธานี", 1], ["นราธิวาส", 1]], "statuses": [6, 0, 6, 4, 2, 0, 0], "total": 18}}}, "2565": {"total": 18, "provinces": [["ภูเก็ต", 6], ["สงขลา", 5], ["ตรัง", 2], ["พังงา", 2], ["ปัตตานี", 1], ["กระบี่", 1], ["ระนอง", 1]], "statuses": [14, 0, 2, 1, 1, 0, 0], "faculties": ["CoC", "FHT", "FIS", "FTE"], "fac_detail": {"FTE": {"provinces": [["ปัตตานี", 1], ["สงขลา", 1]], "statuses": [2, 0, 0, 0, 0, 0, 0], "total": 2}, "FHT": {"provinces": [["ภูเก็ต", 3], ["สงขลา", 1]], "statuses": [4, 0, 0, 0, 0, 0, 0], "total": 4}, "FIS": {"provinces": [["ภูเก็ต", 2], ["พังงา", 1], ["สงขลา", 1], ["ระนอง", 1]], "statuses": [3, 0, 0, 1, 1, 0, 0], "total": 5}, "CoC": {"provinces": [["สงขลา", 2], ["ตรัง", 2], ["ภูเก็ต", 1], ["พังงา", 1], ["กระบี่", 1]], "statuses": [5, 0, 2, 0, 0, 0, 0], "total": 7}}}, "2566": {"total": 34, "provinces": [], "statuses": [14, 17, 0, 0, 1, 2, 0], "faculties": ["CoC", "FHT", "FIS", "FTE"], "fac_detail": {"FTE": {"provinces": [], "statuses": [2, 1, 0, 0, 0, 1, 0], "total": 4}, "FHT": {"provinces": [], "statuses": [1, 2, 0, 0, 0, 0, 0], "total": 3}, "FIS": {"provinces": [], "statuses": [2, 2, 0, 0, 0, 0, 0], "total": 4}, "CoC": {"provinces": [], "statuses": [9, 12, 0, 0, 1, 1, 0], "total": 23}}}, "2567": {"total": 43, "provinces": [], "statuses": [5, 33, 0, 0, 5, 0, 0], "faculties": ["CoC", "FHT", "FIS", "FTE"], "fac_detail": {"FTE": {"provinces": [], "statuses": [0, 3, 0, 0, 1, 0, 0], "total": 4}, "FIS": {"provinces": [], "statuses": [1, 4, 0, 0, 0, 0, 0], "total": 5}, "FHT": {"provinces": [], "statuses": [0, 6, 0, 0, 4, 0, 0], "total": 10}, "CoC": {"provinces": [], "statuses": [4, 20, 0, 0, 0, 0, 0], "total": 24}}}, "2568": {"total": 53, "provinces": [["ภูเก็ต", 24], ["พังงา", 6], ["ตรัง", 5], ["กระบี่", 4], ["พัทลุง", 2], ["นครศรีธรรมราช", 2], ["ปัตตานี", 2], ["ชุมพร", 2], ["นราธิวาส", 1], ["ระนอง", 1], ["กรุงเทพมหานคร", 1], ["สุราษฎร์ธานี", 1], ["อุดรธานี", 1], ["สุโขทัย", 1]], "statuses": [0, 51, 0, 0, 2, 0, 0], "faculties": ["CoC", "FHT", "FIS", "FTE"], "fac_detail": {"FTE": {"provinces": [["กระบี่", 2], ["ภูเก็ต", 2], ["นครศรีธรรมราช", 1], ["ตรัง", 1]], "statuses": [0, 6, 0, 0, 0, 0, 0], "total": 6}, "FIS": {"provinces": [["ภูเก็ต", 1]], "statuses": [0, 1, 0, 0, 0, 0, 0], "total": 1}, "FHT": {"provinces": [["ภูเก็ต", 6], ["พังงา", 2], ["พัทลุง", 1], ["กระบี่", 1], ["นราธิวาส", 1], ["ปัตตานี", 1]], "statuses": [0, 11, 0, 0, 1, 0, 0], "total": 12}, "CoC": {"provinces": [["ภูเก็ต", 15], ["พังงา", 4], ["ตรัง", 4], ["ชุมพร", 2], ["พัทลุง", 1], ["กระบี่", 1], ["ระนอง", 1], ["กรุงเทพมหานคร", 1], ["นครศรีธรรมราช", 1], ["สุราษฎร์ธานี", 1], ["ปัตตานี", 1], ["อุดรธานี", 1], ["สุโขทัย", 1]], "statuses": [0, 33, 0, 0, 1, 0, 0], "total": 34}}}, "2569": {"total": 67, "provinces": [["ภูเก็ต", 21], ["กระบี่", 9], ["พังงา", 9], ["สงขลา", 8], ["ตรัง", 7], ["สุราษฎร์ธานี", 5], ["ปัตตานี", 3], ["ยะลา", 2], ["นราธิวาส", 1], ["พัทลุง", 1], ["สตูล", 1]], "statuses": [0, 0, 0, 0, 1, 0, 66], "faculties": ["CoC", "FHT", "FIS", "FTE"], "fac_detail": {"FTE": {"provinces": [["กระบี่", 2], ["สงขลา", 2], ["พังงา", 1], ["สตูล", 1]], "statuses": [0, 0, 0, 0, 0, 0, 6], "total": 6}, "FIS": {"provinces": [["สงขลา", 1]], "statuses": [0, 0, 0, 0, 0, 0, 1], "total": 1}, "FHT": {"provinces": [["ภูเก็ต", 6], ["พังงา", 2], ["ตรัง", 1], ["ปัตตานี", 1], ["สงขลา", 1]], "statuses": [0, 0, 0, 0, 1, 0, 10], "total": 11}, "CoC": {"provinces": [["ภูเก็ต", 15], ["กระบี่", 7], ["ตรัง", 6], ["พังงา", 6], ["สุราษฎร์ธานี", 5], ["สงขลา", 4], ["ปัตตานี", 2], ["ยะลา", 2], ["นราธิวาส", 1], ["พัทลุง", 1]], "statuses": [0, 0, 0, 0, 0, 0, 49], "total": 49}}}, "all": {"total": 489, "provinces": [["ภูเก็ต", 101], ["พังงา", 42], ["ตรัง", 41], ["สงขลา", 38], ["กระบี่", 35], ["นครศรีธรรมราช", 31], ["สุราษฎร์ธานี", 29], ["ปัตตานี", 14], ["พัทลุง", 14], ["สตูล", 14], ["นราธิวาส", 10], ["ระนอง", 8], ["ยะลา", 7], ["พััทลุง", 7], ["ชุมพร", 4], ["นนทบุรี", 2], ["เพชรบูรณ์", 2], ["สระบุรี", 2], ["อุดรธานี", 2], ["ศรีสะเกษ", 1], ["เชียงราย", 1], ["แพร่", 1], ["หนองคาย", 1], ["มหาสารคาม", 1], ["ประจวบคีรีขันธ์", 1], ["ชัยภูมิ", 1], ["กรุงเทพมหานคร", 1], ["สุโขทัย", 1]], "statuses": [176, 104, 40, 10, 13, 2, 144], "faculties": ["CoC", "CoE", "FHT", "FIS", "FTE", "TE"], "fac_detail": {"FIS": {"provinces": [["ภูเก็ต", 18], ["สงขลา", 8], ["พังงา", 7], ["ตรัง", 5], ["สุราษฎร์ธานี", 5], ["นครศรีธรรมราช", 3], ["กระบี่", 2], ["พัทลุง", 2], ["ศรีสะเกษ", 1], ["ปัตตานี", 1], ["ยะลา", 1], ["สตูล", 1], ["สระบุรี", 1], ["นราธิวาส", 1], ["ระนอง", 1]], "statuses": [29, 8, 3, 1, 1, 0, 24], "total": 66}, "CoE": {"provinces": [["นครศรีธรรมราช", 11], ["สุราษฎร์ธานี", 8], ["กระบี่", 7], ["ภูเก็ต", 6], ["สตูล", 6], ["ปัตตานี", 4], ["สงขลา", 4], ["ตรัง", 3], ["พังงา", 3], ["นราธิวาส", 2], ["ยะลา", 2], ["นนทบุรี", 1], ["พัทลุง", 1], ["สระบุรี", 1], ["เชียงราย", 1], ["ประจวบคีรีขันธ์", 1], ["พััทลุง", 1], ["ชุมพร", 1]], "statuses": [34, 1, 7, 3, 1, 0, 17], "total": 63}, "TE": {"provinces": [["พังงา", 5], ["ตรัง", 4], ["นครศรีธรรมราช", 4], ["พััทลุง", 4], ["กระบี่", 3], ["ระนอง", 3], ["สุราษฎร์ธานี", 3], ["สงขลา", 2], ["ภูเก็ต", 1], ["สตูล", 1]], "statuses": [9, 0, 8, 0, 0, 0, 13], "total": 30}, "FTE": {"provinces": [["กระบี่", 4], ["ภูเก็ต", 3], ["สงขลา", 3], ["นราธิวาส", 1], ["ปัตตานี", 1], ["นครศรีธรรมราช", 1], ["ตรัง", 1], ["พังงา", 1], ["สตูล", 1]], "statuses": [6, 10, 0, 0, 1, 1, 6], "total": 24}, "FHT": {"provinces": [["ภูเก็ต", 30], ["สงขลา", 9], ["พังงา", 7], ["ปัตตานี", 4], ["ตรัง", 3], ["พัทลุง", 3], ["กระบี่", 3], ["เพชรบูรณ์", 2], ["นราธิวาส", 2], ["นครศรีธรรมราช", 2], ["สตูล", 1], ["ยะลา", 1], ["พััทลุง", 1], ["ระนอง", 1], ["อุดรธานี", 1], ["สุราษฎร์ธานี", 1]], "statuses": [27, 20, 8, 0, 6, 0, 23], "total": 84}, "CoC": {"provinces": [["ภูเก็ต", 43], ["ตรัง", 25], ["พังงา", 19], ["กระบี่", 16], ["สุราษฎร์ธานี", 12], ["สงขลา", 12], ["นครศรีธรรมราช", 10], ["พัทลุง", 8], ["นราธิวาส", 4], ["สตูล", 4], ["ปัตตานี", 4], ["ยะลา", 3], ["ระนอง", 3], ["ชุมพร", 3], ["แพร่", 1], ["หนองคาย", 1], ["นนทบุรี", 1], ["มหาสารคาม", 1], ["พััทลุง", 1], ["ชัยภูมิ", 1], ["กรุงเทพมหานคร", 1], ["อุดรธานี", 1], ["สุโขทัย", 1]], "statuses": [71, 65, 14, 6, 4, 1, 61], "total": 222}}}};
+var SL = ["สำเร็จการศึกษา","กำลังศึกษา","ไม่มีข้อมูลใน sis","ไม่มาลงทะเบียน","ตกออก","ลาออก","ไม่ระบุ"];
+var SC = ["#10b981","#6366f1","#94a3b8","#3b82f6","#ef4444","#f97316","#f59e0b"];
+var era='BE', curYearBE='all', curYearCE='all', curFac='all';
+
+var initProvLabels = ["ภูเก็ต", "พังงา", "ตรัง", "สงขลา", "กระบี่", "นครศรีธรรมราช", "สุราษฎร์ธานี", "ปัตตานี", "พัทลุง", "สตูล", "นราธิวาส", "ระนอง", "ยะลา", "พััทลุง", "ชุมพร", "นนทบุรี", "เพชรบูรณ์", "สระบุรี", "อุดรธานี", "ศรีสะเกษ", "เชียงราย", "แพร่", "หนองคาย", "มหาสารคาม", "ประจวบคีรีขันธ์", "ชัยภูมิ", "กรุงเทพมหานคร", "สุโขทัย"];
+var initProvData   = [101, 42, 41, 38, 35, 31, 29, 14, 14, 14, 10, 8, 7, 7, 4, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+var initStatuses   = [176, 104, 40, 10, 13, 2, 144];
+
+// Bar chart - provinces
+var barChart = new Chart(document.getElementById('barC'), {
+  type: 'bar',
+  data: { labels: initProvLabels, datasets: [{ label: 'จำนวน', data: initProvData,
+    backgroundColor: '#0ea5e9', hoverBackgroundColor: '#6366f1',
+    borderRadius: 6, borderSkipped: false }] },
+  options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    plugins: { legend:{display:false},
+      tooltip:{backgroundColor:'rgba(30,58,95,0.95)',titleColor:'#38bdf8',bodyColor:'#e2e8f0',padding:10,cornerRadius:8,displayColors:false,
+        callbacks:{label:function(c){return '  '+c.parsed.x+' คน';}}} },
+    scales: {
+      x:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#64748b',font:{family:'Kanit',size:10}},border:{display:false}},
+      y:{grid:{display:false},ticks:{color:'#334155',font:{family:'Kanit',size:11}},border:{display:false}} } }
+});
+
+// Donut chart - statuses
+var donutChart = new Chart(document.getElementById('donutC'), {
+  type: 'doughnut',
+  data: { labels: SL, datasets: [{ data: initStatuses, backgroundColor: SC,
+    borderColor:'#fff', borderWidth:2, hoverOffset:10 }] },
+  options: { responsive:true, maintainAspectRatio:false, cutout:'65%',
+    plugins: {
+      legend:{position:'bottom',labels:{color:'#334155',font:{family:'Kanit',size:10},padding:8,usePointStyle:true,pointStyleWidth:7,
+        filter:function(item,data){return data.datasets[0].data[item.index]>0;}}},
+      tooltip:{backgroundColor:'rgba(30,58,95,0.95)',titleColor:'#38bdf8',bodyColor:'#e2e8f0',padding:10,cornerRadius:8,
+        callbacks:{label:function(c){var t=c.dataset.data.reduce(function(a,b){return a+b;},0);
+          return '  '+c.parsed+' คน ('+((c.parsed/t)*100).toFixed(1)+'%)';}}} } }
+});
+
+// Year bar chart
+var yearBarChart = new Chart(document.getElementById('yearBarC'), {
+  type: 'bar',
+  data: { labels: ['2561','2562','2563','2564','2565','2566','2567','2568','2569'],
+    datasets: [{ label:'จำนวน', data: [84, 78, 67, 45, 18, 34, 43, 53, 67],
+      backgroundColor: ['#0ea5e9','#38bdf8','#6366f1','#818cf8','#10b981','#34d399','#f59e0b','#fbbf24','#f97316'],
+      borderRadius:8, borderSkipped:false }] },
+  options: { responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},
+      tooltip:{backgroundColor:'rgba(30,58,95,0.95)',titleColor:'#38bdf8',bodyColor:'#e2e8f0',padding:10,cornerRadius:8,displayColors:false,
+        callbacks:{label:function(c){return '  '+c.parsed.y+' คน';}}}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#64748b',font:{family:'Kanit',size:10}},border:{display:false}},
+      y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#64748b',font:{family:'Kanit',size:10}},border:{display:false}} } }
+});
+
+// Faculty pie chart
+var facPieChart = new Chart(document.getElementById('facPieC'), {
+  type: 'doughnut',
+  data: { labels: ["FIS", "CoE", "TE", "FHT", "CoC", "FTE"], datasets: [{ data: [66, 63, 30, 84, 222, 24],
+    backgroundColor:['#0ea5e9','#6366f1','#10b981','#f59e0b','#ef4444','#f97316'],
+    borderColor:'#fff', borderWidth:2, hoverOffset:8 }] },
+  options: { responsive:true, maintainAspectRatio:false, cutout:'55%',
+    plugins:{legend:{position:'right',labels:{color:'#334155',font:{family:'Kanit',size:11},padding:10,usePointStyle:true,pointStyleWidth:7}},
+      tooltip:{backgroundColor:'rgba(30,58,95,0.95)',titleColor:'#38bdf8',bodyColor:'#e2e8f0',padding:10,cornerRadius:8}} }
+});
+
+// Trend line
+var trendChart = new Chart(document.getElementById('trendC'), {
+  type: 'line',
+  data: { labels:['2561','2562','2563','2564','2565','2566','2567','2568','2569'],
+    datasets: [{"label": "สำเร็จการศึกษา", "data": [16, 53, 59, 15, 14, 14, 5, 0, 0], "borderColor": "#0ea5e9", "backgroundColor": "#0ea5e922", "tension": 0.4, "fill": false, "pointRadius": 4, "borderWidth": 2}, {"label": "กำลังศึกษา", "data": [0, 2, 0, 1, 0, 17, 33, 51, 0], "borderColor": "#6366f1", "backgroundColor": "#6366f122", "tension": 0.4, "fill": false, "pointRadius": 4, "borderWidth": 2}, {"label": "ไม่มีข้อมูลใน sis", "data": [4, 5, 7, 22, 2, 0, 0, 0, 0], "borderColor": "#64748b", "backgroundColor": "#64748b22", "tension": 0.4, "fill": false, "pointRadius": 4, "borderWidth": 2}, {"label": "ไม่มาลงทะเบียน", "data": [1, 2, 1, 5, 1, 0, 0, 0, 0], "borderColor": "#3b82f6", "backgroundColor": "#3b82f622", "tension": 0.4, "fill": false, "pointRadius": 4, "borderWidth": 2}, {"label": "ตกออก", "data": [0, 1, 0, 2, 1, 1, 5, 2, 1], "borderColor": "#ef4444", "backgroundColor": "#ef444422", "tension": 0.4, "fill": false, "pointRadius": 4, "borderWidth": 2}, {"label": "ลาออก", "data": [0, 0, 0, 0, 0, 2, 0, 0, 0], "borderColor": "#f97316", "backgroundColor": "#f9731622", "tension": 0.4, "fill": false, "pointRadius": 4, "borderWidth": 2}, {"label": "ไม่ระบุ", "data": [63, 15, 0, 0, 0, 0, 0, 0, 66], "borderColor": "#94a3b8", "backgroundColor": "#94a3b822", "tension": 0.4, "fill": false, "pointRadius": 4, "borderWidth": 2}] },
+  options: { responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{position:'right',labels:{color:'#334155',font:{family:'Kanit',size:10},padding:8,usePointStyle:true,pointStyleWidth:7}},
+      tooltip:{backgroundColor:'rgba(30,58,95,0.95)',titleColor:'#38bdf8',bodyColor:'#e2e8f0',padding:10,cornerRadius:8}},
+    scales:{
+      x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#64748b',font:{family:'Kanit',size:10}},border:{display:false}},
+      y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{color:'#64748b',font:{family:'Kanit',size:10}},border:{display:false}} } }
+});
+
+function getD(yr, fac) {
+  var yd = YD[yr]; if (!yd) return null;
+  return fac === 'all' ? yd : (yd.fac_detail[fac] || null);
+}
+
+function updateFacBtns(yr) {
+  var yd = YD[yr]; if (!yd) return;
+  var facs = Object.keys(yd.fac_detail || {}).filter(function(f){return f;}).sort();
+  var html = "<button class=\"fbtn active\" onclick=\"filterFac('all',this)\">ทั้งหมด</button>";
+  facs.forEach(function(f) {
+    html += "<button class=\"fbtn\" onclick=\"filterFac('" + f + "',this)\">" + f + "</button>";
+  });
+  document.getElementById('fac-btns').innerHTML = html;
+  curFac = 'all';
+}
+
+function loadData(yr, fac) {
+  var d = getD(yr, fac); if (!d) return;
+  var total = d.total || 0;
+  document.getElementById('kpi-total').textContent = total;
+  var stats = d.statuses || [];
+  // grad & study KPIs
+  document.getElementById('kpi-grad').textContent = stats[0] || 0;
+  document.getElementById('kpi-study').textContent = stats[1] || 0;
+  if (total > 0) {
+    document.getElementById('kpi-grad-pct').textContent = (((stats[0]||0)/total)*100).toFixed(1)+'%';
+    document.getElementById('kpi-study-pct').textContent = (((stats[1]||0)/total)*100).toFixed(1)+'%';
+  }
+  var provs = d.provinces || [];
+  document.getElementById('kpi-prov').textContent = provs.length;
+  // bar
+  barChart.data.labels = provs.map(function(p){return p[0];});
+  barChart.data.datasets[0].data = provs.map(function(p){return p[1];});
+  barChart.update();
+  var nd = document.getElementById('bar-nodata');
+  nd.style.display = provs.length ? 'none' : 'block';
+  document.getElementById('barC').style.opacity = provs.length ? '1' : '0.1';
+  // donut
+  donutChart.data.datasets[0].data = stats;
+  donutChart.update();
+  stats.forEach(function(v,i){var el=document.getElementById('st'+i);if(el)el.textContent=v;});
+}
+
+function filterYear(be, ce, btn) {
+  curYearBE = be; curYearCE = ce;
+  document.querySelectorAll('.ybtn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  var lbl = be === 'all' ? 'ทั้งหมด (489 คน)' : (era==='BE' ? be+' (พ.ศ.)' : ce+' (ค.ศ.)');
+  document.getElementById('ydisplay').textContent = lbl;
+  document.getElementById('kpi-year-lbl').textContent = be==='all' ? 'รวมทั้งหมด 9 ปี' : 'ปี '+lbl;
+  updateFacBtns(be);
+  loadData(be, 'all');
+}
+
+function filterFac(fac, btn) {
+  document.querySelectorAll('.fbtn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  curFac = fac;
+  loadData(curYearBE, fac);
+}
+
+function switchEra(e) {
+  era = e;
+  document.getElementById('era-be').classList.toggle('active', e==='BE');
+  document.getElementById('era-ce').classList.toggle('active', e==='CE');
+  if (curYearBE !== 'all') {
+    var yr = e==='BE' ? curYearBE : curYearCE;
+    document.getElementById('ydisplay').textContent = yr+' ('+(e==='BE'?'พ.ศ.':'ค.ศ.')+')';
+    // relabel year buttons
+    document.querySelectorAll('.ybtn').forEach(function(b){
+      var be = b.getAttribute('onclick').match(/'(\d{4})'/);
+      if (be) {
+        var beY = be[1]; var ceY = String(parseInt(beY)-543);
+        b.textContent = e==='BE' ? beY : ceY;
+      }
+    });
+  }
+}
+</script>
+</body>
+</html>
